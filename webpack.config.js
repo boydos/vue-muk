@@ -2,6 +2,7 @@ const path = require('path')
 const VueLoaderPlugin = require('vue-loader/lib/plugin')
 const HTMLPlugin = require('html-webpack-plugin')
 const webpack = require('webpack')
+const ExtractTextPlugin = require('extract-text-webpack-plugin')
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -9,7 +10,7 @@ const config = {
     target: 'web',
     entry: path.join(__dirname, 'src/index.js'),
     output: {
-   	    filename: "bundle.js",
+   	    filename: "bundle.[hash:8].js",
    	    path: path.join(__dirname, "dist")
     },
     plugins: [
@@ -29,21 +30,6 @@ const config = {
         {
             test: /\.jsx$/,
             loader: 'babel-loader'
-        },
-        {
-            test: /\.css$/,
-            use: [
-                'style-loader',
-                'css-loader'
-            ]
-        },
-        {
-            test: /\.styl$/,
-            use: [
-                'style-loader',
-                'css-loader',
-                'stylus-loader'
-            ]
         },
         {
             test: /\.(gif|jpeg|jpg|png|svg)$/,
@@ -75,6 +61,55 @@ if (isDev) {
     config.plugins.push(
         new webpack.HotModuleReplacementPlugin(),
         new webpack.NoEmitOnErrorsPlugin()
+    )
+    config.module.rules.push({
+        test: /\.css$/,
+        use: [
+            'style-loader',
+            'css-loader'
+        ]
+    },
+    {
+        test: /\.styl$/,
+        use: [
+            'style-loader',
+            'css-loader',
+            {
+                loader: 'postcss-loader',
+                options: {
+                    sourceMap: true
+                }
+            },
+            'stylus-loader'
+        ]
+    })
+} else {
+    config.output.filename = '[name].[chunkhash:8].js'
+    config.module.rules.push({
+        test:/\.css$/,
+        use: ExtractTextPlugin.extract({
+          fallback: "style-loader",
+          use: "css-loader"
+        })
+      },
+      {
+        test: /\.styl$/,
+        use: ExtractTextPlugin.extract({
+            fallback: 'style-loader',
+            use: [
+                'css-loader',
+                {
+                    loader: 'postcss-loader',
+                    options: {
+                        sourceMap: true
+                    }
+                },
+                'stylus-loader'
+            ]
+        })
+    })
+    config.plugins.push(
+        new ExtractTextPlugin('styles.[chunkhash:8].css')
     )
 }
 
